@@ -1,0 +1,137 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
+
+// LCD Setup (I2C)
+LiquidCrystal_I2C lcd(0x27, 16, 2); // Address 0x27, 16x2 display
+
+// Sensor Pins
+#define VIBRATION_SENSOR_PIN D1
+#define PIR_SENSOR_PIN D2
+#define BUZZER_PIN D3
+#define GPS_RX D5
+#define GPS_TX D6
+
+// Blynk Auth Token
+char auth[] = "YOUR_BLYNK_AUTH_TOKEN";
+
+// WiFi Credentials
+char ssid[] = "YOUR_WIFI_SSID";
+char pass[] = "YOUR_WIFI_PASSWORD";
+
+// GPS Setup
+SoftwareSerial gpsSerial(GPS_RX, GPS_TX);
+TinyGPSPlus gps;
+
+// Variables
+bool theftDetected = false;
+unsigned long lastAlertTime = 0;
+const unsigned long alertInterval = 30000; // 30 seconds between alerts
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Initialize LCD
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("System Booting");
+  delay(1000);
+  
+  // Initialize sensors
+  pinMode(VIBRATION_SENSOR_PIN, INPUT);
+  pinMode(PIR_SENSOR_PIN, INPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  
+  // Initialize GPS
+  gpsSerial.begin(9600);
+  
+  // Connect to WiFi and Blynk
+  WiFi.begin(ssid, pass);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Connecting WiFi");
+  
+  Blynk.begin(auth, ssid, pass);
+  while (Blynk.connect() == false) {
+    delay(500);
+  }
+  
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("System Ready");
+  lcd.setCursor(0, 1);
+  lcd.print("Monitoring...");
+}
+
+void loop() {
+  Blynk.run();
+  
+  // Read sensors
+  int vibration = digitalRead(VIBRATION_SENSOR_PIN);
+  int pir = digitalRead(PIR_SENSOR_PIN);
+  
+  // Process GPS data
+  while (gpsSerial.available() > 0) {
+    if (gps.encode(gpsSerial.read())) {
+      if (gps.location.isValid()) {
+        Blynk.virtualWrite(V1, gps.location.lat(), gps.location.lng());
+      }
+    }
+  }
+  
+  // Check for theft conditions
+  if (vibration == HIGH || pir == HIGH) {
+    if (!theftDetected || millis() - lastAlertTime > alertInterval) {
+      theftDetected = true;
+      lastAlertTime = millis();
+      triggerAlarm();
+      sendAlert();
+      updateLCD();
+    }
+  } else {
+    if (theftDetected) {
+      theftDetected = false;
+      digitalWrite(BUZZER_PIN, LOW);
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("System Normal");
+      lcd.setCursor(0, 1);
+      lcd.print("Monitoring...");
+    }
+  }
+  
+  delay(100);
+}
+
+void triggerAlarm() {
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(1000);
+  digitalWrite(BUZZER_PIN, LOW);
+}
+
+void sendAlert() {
+  Blynk.notify("⚠️ Theft Alert! Your vehicle is being tampered with!");
+  
+  if (gps.location.isValid()) {
+    String mapUrl = "http://maps.google.com/maps?q=" + String(gps.location.lat(), 6) + "," + String(gps.location.lng(), 6);
+    Blynk.notify("📍 Vehicle Location: " + mapUrl);
+  }
+}
+
+void updateLCD() {
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("ALERT: Theft Detected");
+  lcd.setCursor(0, 1);
+  
+  if (digitalRead(VIBRATION_SENSOR_PIN) == HIGH) {
+    lcd.print("Vibration Detected");
+  } else if (digitalRead(PIR_SENSOR_PIN) == HIGH) {
+    lcd.print("Intruder Detected");
+  }
+}
