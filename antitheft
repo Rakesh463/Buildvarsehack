@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVehicle Pro - Anti-Theft Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/face-api.js/0.22.2/face-api.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem 1.5rem;
+            position: relative;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo i {
+            font-size: 2rem;
+            color: #00d4ff;
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ffffff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            transform: translateX(5px);
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: #00d4ff;
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-link:hover::before, .nav-link.active::before {
+            transform: scaleY(1);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #ffffff, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-section {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 50px;
+            color: #00ff88;
+            font-weight: 600;
+        }
+
+        .status-badge.alert {
+            background: rgba(255, 82, 82, 0.1);
+            border-color: rgba(255, 82, 82, 0.3);
+            color: #ff5252;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 25px;
+            font-size: 0.9rem;
+        }
+
+        .connection-status.connected {
+            color: #00d4ff;
+        }
+
+        .connection-status.disconnected {
+            background: rgba(255, 165, 0, 0.1);
+            border-color: rgba(255, 165, 0, 0.3);
+            color: #ffa500;
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+            transform: translateX(-100%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            100% { transform: translateX(100%); }
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 212, 255, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .security-icon {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: white;
+        }
+
+        .location-icon {
+            background: linear-gradient(45deg, #ff6b35, #f7931e);
+            color: white;
+        }
+
+        .battery-icon {
+            background: linear-gradient(45deg, #00ff88, #00cc6a);
+            color: white;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1rem;
+        }
+
+        .card-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        /* Live Feed Section */
+        .live-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .video-feed {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .video-container {
+            background: #000;
+            border-radius: 15px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .video-placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            text-align: center;
+        }
+
+        #videoElement {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 15px;
+            display: none;
+        }
+
+        #faceCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+            pointer-events: none;
+            display: none;
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .face-detection-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 165, 0, 0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            display: none;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .face-detection-indicator.active {
+            background: rgba(255, 0, 0, 0.9);
+            animation: alertBlink 1s infinite;
+        }
+
+        @keyframes alertBlink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.5; }
+        }
+
+        .recording-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            display: none;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .rec-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+
+        .video-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .control-btn {
+            padding: 0.75rem 1.5rem;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50px;
+            color: #00d4ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .face-detection-controls {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #00d4ff;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .volume-slider {
+            width: 80px;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #00d4ff;
+            cursor: pointer;
+        }
+
+        .sound-test-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 165, 0, 0.1);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            border-radius: 25px;
+            color: #ffa500;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .sound-test-btn:hover {
+            background: rgba(255, 165, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* Debug Info */
+        .debug-info {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #00ff88;
+        }
+
+        /* Alerts Panel */
+        .alerts-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: rgba(255, 82, 82, 0.1);
+            border-left: 4px solid #ff5252;
+            border-radius: 10px;
+        }
+
+        .alert-item.warning {
+            background: rgba(255, 193, 7, 0.1);
+            border-left-color: #ffc107;
+        }
+
+        .alert-item.info {
+            background: rgba(0, 212, 255, 0.1);
+            border-left-color: #00d4ff;
+        }
+
+        .alert-item.success {
+            background: rgba(0, 255, 136, 0.1);
+            border-left-color: #00ff88;
+        }
+
+        .alert-time {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Backend Status Panel */
+        .backend-status {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-value {
+            font-weight: 600;
+        }
+
+        .status-value.online {
+            color: #00ff88;
+        }
+
+        .status-value.offline {
+            color: #ff5252;
+        }
+
+        /* Map Section */
+        .map-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .map-container {
+            background: #1a1a2e;
+            border-radius: 15px;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .map-placeholder {
+            color: rgba(255, 255, 255, 0.5);
+            text-align: center;
+        }
+
+        /* Sensor Status Grid */
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .sensor-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .sensor-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .sensor-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 0.5rem;
+        }
+
+        .status-active {
+            background: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .status-inactive {
+            background: #ff5252;
+            box-shadow: 0 0 10px rgba(255, 82, 82, 0.5);
+        }
+
+        /* Settings Section */
+        .settings-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .settings-group {
+            margin-bottom: 2rem;
+        }
+
+        .settings-group h4 {
+            color: #00d4ff;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+            margin-bottom: 0.5rem;
+        }
+
+        .setting-description {
+            flex: 1;
+        }
+
+        .setting-control {
+            margin-left: 2rem;
+        }
+
+        .input-field {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: white;
+            width: 150px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .live-section {
+                grid-template-columns: 1fr;
+            }
+
+            .face-detection-controls {
+                gap: 1rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 212, 255, 0.3);
+            border-top: 4px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-shield-alt"></i>
+                <h1>SecureVehicle Pro</h1>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link active" data-section="dashboard">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-section="monitoring">
+                            <i class="fas fa-video"></i>
+                            Live Monitoring
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-section="location">
+                            <i class="fas fa-map-marker-alt"></i>
+                            GPS Tracking
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-section="sensors">
+                            <i class="fas fa-microchip"></i>
+                            Sensor Status
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-section="alerts">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Alert History
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" data-section="settings">
+                            <i class="fas fa-cog"></i>
+                            Settings
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <h1 class="page-title" id="pageTitle">Dashboard Overview</h1>
+                <div class="status-section">
+                    <div class="connection-status connected" id="backendStatus">
+                        <div class="pulse"></div>
+                        Backend Online
+                    </div>
+                    <div class="status-badge" id="systemStatus">
+                        <div class="pulse"></div>
+                        System Secure
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="content-section">
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <div class="card-icon security-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 class="card-title">Security Status</h3>
+                        <div class="card-value" id="securityStatus">PROTECTED</div>
+                        <p class="card-subtitle">All systems operational</p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon location-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <h3 class="card-title">Current Location</h3>
+                        <div class="card-value" id="currentLocation">Parked</div>
+                        <p class="card-subtitle">Last updated: <span id="lastUpdate">2 min ago</span></p>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon battery-icon">
+                            <i class="fas fa-battery-full"></i>
+                        </div>
+                        <h3 class="card-title">Battery Health</h3>
+                        <div class="card-value" id="batteryLevel">94%</div>
+                        <p class="card-subtitle">Excellent condition</p>
+                    </div>
+                </div>
+
+                <div class="live-section">
+                    <div class="video-feed">
+                        <h3>Live Camera Feed with Face Detection</h3>
+                        <div class="video-container">
+                            <video id="videoElement" autoplay muted></video>
+                            <canvas id="faceCanvas"></canvas>
+                            <div class="video-placeholder" id="videoPlaceholder">
+                                <i class="fas fa-video" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                                <p>Vehicle Security Camera</p>
+                                <div class="loading-spinner" id="videoLoader" style="display: none;"></div>
+                            </div>
+                            <div class="video-overlay" id="videoOverlay">
+                                Live Feed - Vehicle Security System
+                            </div>
+                            <div class="face-detection-indicator" id="faceDetectionIndicator">
+                                <i class="fas fa-user"></i>
+                                Face Detected
+                            </div>
+                            <div class="recording-indicator" id="recordingIndicator">
+                                <div class="rec-dot"></div>
+                                REC
+                            </div>
+                        </div>
+                        <div class="video-controls">
+                            <button class="control-btn" id="streamBtn" onclick="toggleCamera()">
+                                <i class="fas fa-play" id="cameraIcon"></i>
+                                <span id="streamText">Start Stream</span>
+                            </button>
+                            <button class="control-btn" onclick="captureSnapshot()">
+                                <i class="fas fa-camera"></i> Capture
+                            </button>
+                            <button class="sound-test-btn" onclick="testBuzzerSound()">
+                                <i class="fas fa-volume-up"></i> Test Sound
+                            </button>
+                        </div>
+                        <div class="face-detection-controls">
+                            <div class="control-group">
+                                <label>Face Detection:</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="faceDetectionToggle" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="control-group">
+                                <label>Buzzer Alert:</label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="buzzerToggle" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="control-group volume-control">
+                                <label>Volume:</label>
+                                <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
+                                <span id="volumeDisplay">70%</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Debug Info -->
+                        <div class="debug-info" id="debugInfo">
+                            Face API Status: Loading...<br>
+                            Detection Status: Inactive<br>
+                            Audio Context: Not initialized
+                        </div>
+                    </div>
+
+                    <div class="alerts-panel">
+                        <h3>System Status</h3>
+                        <div class="backend-status">
+                            <div class="status-item">
+                                <span>API Server:</span>
+                                <span class="status-value online" id="apiStatus">Online</span>
+                            </div>
+                            <div class="status-item">
+                                <span>Database:</span>
+                                <span class="status-value online" id="dbStatus">Connected</span>
+                            </div>
+                            <div class="status-item">
+                                <span>WebSocket:</span>
+                                <span class="status-value online" id="wsStatus">Active</span>
+                            </div>
+                            <div class="status-item">
+                                <span>Face AI:</span>
+                                <span class="status-value online" id="aiStatus">Ready</span>
+                            </div>
+                        </div>
+
+                        <h3>Recent Alerts</h3>
+                        <div id="alertsList">
+                            <div class="alert-item info">
+                                <i class="fas fa-info-circle"></i>
+                                <div>
+                                    <p>System initialized successfully</p>
+                                    <span class="alert-time">5 minutes ago</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Live Monitoring Section -->
+            <section id="monitoring-section" class="content-section" style="display: none;">
+                <div class="video-feed">
+                    <h3>Advanced Live Monitoring</h3>
+                    <div class="video-container">
+                        <video id="monitoringVideo" autoplay muted></video>
+                        <canvas id="monitoringCanvas"></canvas>
+                        <div class="video-placeholder">
+                            <i class="fas fa-video" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <p>Enhanced Security Monitoring</p>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Motion detection & AI analysis active</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GPS Tracking Section -->
+            <section id="location-section" class="content-section" style="display: none;">
+                <div class="map-section">
+                    <h3>Vehicle Location Tracking</h3>
+                    <div class="map-container">
+                        <div class="map-placeholder">
+                            <i class="fas fa-map" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <p>GPS Map Integration</p>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Coordinates: <span id="coordinates">12.9716° N, 77.5946° E</span></p>
+                        </div>
+                    </div>
+                    <div class="dashboard-grid" style="margin-top: 2rem;">
+                        <div class="card">
+                            <div class="card-icon location-icon">
+                                <i class="fas fa-route"></i>
+                            </div>
+                            <h3 class="card-title">Distance Traveled</h3>
+                            <div class="card-value">247 km</div>
+                            <p class="card-subtitle">Today's journey</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon security-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <h3 class="card-title">Parked Duration</h3>
+                            <div class="card-value">2.5 hrs</div>
+                            <p class="card-subtitle">Current location</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon battery-icon">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
+                            <h3 class="card-title">Average Speed</h3>
+                            <div class="card-value">45 km/h</div>
+                            <p class="card-subtitle">Last trip</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sensor Status Section -->
+            <section id="sensors-section" class="content-section" style="display: none;">
+                <h3 style="margin-bottom: 2rem;">Sensor Network Status</h3>
+                <div class="sensor-grid">
+                    <div class="sensor-card">
+                        <h4>Vibration Sensor</h4>
+                        <span class="sensor-status status-active" id="vibrationSensor"></span>
+                        <p id="vibrationStatus">Active</p>
+                    </div>
+                    <div class="sensor-card">
+                        <h4>PIR Motion Sensor</h4>
+                        <span class="sensor-status status-active" id="pirSensor"></span>
+                        <p id="pirStatus">Active</p>
+                    </div>
+                    <div class="sensor-card">
+                        <h4>Door Sensor</h4>
+                        <span class="sensor-status status-active" id="doorSensor"></span>
+                        <p id="doorStatus">Secured</p>
+                    </div>
+                    <div class="sensor-card">
+                        <h4>Window Sensor</h4>
+                        <span class="sensor-status status-active" id="windowSensor"></span>
+                        <p id="windowStatus">Secured</p>
+                    </div>
+                    <div class="sensor-card">
+                        <h4>GPS Module</h4>
+                        <span class="sensor-status status-active" id="gpsSensor"></span>
+                        <p id="gpsStatus">Tracking</p>
+                    </div>
+                    <div class="sensor-card">
+                        <h4>Camera System</h4>
+                        <span class="sensor-status status-active" id="cameraSensor"></span>
+                        <p id="cameraStatus">Recording</p>
+                    </div>
+                    <div class="sensor-card">
+                        <h4>Sound Detector</h4>
+                        <span class="sensor-status status-active" id="soundSensor"></span>
+                        <p id="soundStatus">Monitoring</p>
+                    </div>
+                    <div class="sensor-card">
+                        <h4>Temperature</h4>
+                        <span class="sensor-status status-active" id="tempSensor"></span>
+                        <p id="tempStatus">24°C Normal</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Alert History Section -->
+            <section id="alerts-section" class="content-section" style="display: none;">
+                <h3 style="margin-bottom: 2rem;">Alert History & Logs</h3>
+                <div class="alerts-panel">
+                    <div class="alert-item">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <p><strong>Motion Detected</strong> - Unauthorized movement near vehicle</p>
+                            <span class="alert-time">2 hours ago</span>
+                        </div>
+                    </div>
+                    <div class="alert-item warning">
+                        <i class="fas fa-user"></i>
+                        <div>
+                            <p><strong>Face Detection Alert</strong> - Unknown person detected</p>
+                            <span class="alert-time">3 hours ago</span>
+                        </div>
+                    </div>
+                    <div class="alert-item success">
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <p><strong>System Armed</strong> - Security system activated</p>
+                            <span class="alert-time">4 hours ago</span>
+                        </div>
+                    </div>
+                    <div class="alert-item info">
+                        <i class="fas fa-battery-half"></i>
+                        <div>
+                            <p><strong>Battery Warning</strong> - Battery level below 20%</p>
+                            <span class="alert-time">1 day ago</span>
+                        </div>
+                    </div>
+                    <div class="alert-item">
+                        <i class="fas fa-door-open"></i>
+                        <div>
+                            <p><strong>Door Alert</strong> - Vehicle door opened without authorization</p>
+                            <span class="alert-time">2 days ago</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings-section" class="content-section" style="display: none;">
+                <h3 style="margin-bottom: 2rem;">System Settings & Configuration</h3>
+                
+                <div class="settings-section">
+                    <div class="settings-group">
+                        <h4>Security Settings</h4>
+                        <div class="setting-item">
+                            <div class="setting-description">
+                                <strong>Auto-Arm Delay</strong>
+                                <p>Time delay before system automatically arms after ignition off</p>
+                            </div>
+                            <div class="setting-control">
+                                <input type="number" class="input-field" value="30" min="0" max="300"> seconds
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-description">
+                                <strong>Sensitivity Level</strong>
+                                <p>Motion detection sensitivity (1-10)</p>
+                            </div>
+                            <div class="setting-control">
+                                <input type="range" min="1" max="10" value="7" class="volume-slider">
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-description">
+                                <strong>Night Vision</strong>
+                                <p>Enable infrared camera mode in low light</p>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h4>Notification Settings</h4>
+                        <div class="setting-item">
+                            <div class="setting-description">
+                                <strong>SMS Alerts</strong>
+                                <p>Send SMS notifications for security breaches</p>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-description">
+                                <strong>Email Notifications</strong>
+                                <p>Receive detailed alert reports via email</p>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-description">
+                                <strong>Emergency Contact</strong>
+                                <p>Primary contact number for alerts</p>
+                            </div>
+                            <div class="setting-control">
+                                <input type="tel" class="input-field" placeholder="+1 234 567 8900">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h4>System Configuration</h4>
+                        <div class="setting-item">
+                            <div class="setting-description">
+                                <strong>Recording Quality</strong>
+                                <p>Video recording resolution and quality</p>
+                            </div>
+                            <div class="setting-control">
+                                <select class="input-field">
+                                    <option>1080p HD</option>
+                                    <option>720p</option>
+                                    <option>480p</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-description">
+                                <strong>Storage Duration</strong>
+                                <p>How long to keep recorded footage</p>
+                            </div>
+                            <div class="setting-control">
+                                <select class="input-field">
+                                    <option>30 days</option>
+                                    <option>15 days</option>
+                                    <option>7 days</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div class="setting-description">
+                                <strong>Cloud Backup</strong>
+                                <p>Automatically backup footage to cloud storage</p>
+                            </div>
+                            <div class="setting-control">
+                                <label class="toggle-switch">
+                                    <input type="checkbox">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Global variables
+        let videoStream = null;
+        let faceDetectionEnabled = true;
+        let buzzerEnabled = true;
+        let isStreaming = false;
+        let faceApiLoaded = false;
+        let detectionInterval = null;
+        let audioContext = null;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+            loadFaceAPI();
+            updateSystemStatus();
+            simulateRealTimeData();
+            updateDebugInfo();
+        });
+
+        // Initialize application
+        function initializeApp() {
+            console.log('SecureVehicle Pro Dashboard Initialized');
+            addAlert('System started successfully', 'success');
+            
+            // Initialize audio context
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                updateDebugInfo('Audio Context: Ready');
+            } catch (e) {
+                console.error('Audio Context Error:', e);
+                updateDebugInfo('Audio Context: Error');
+            }
+        }
+
+        // Update debug information
+        function updateDebugInfo(message = null) {
+            const debugInfo = document.getElementById('debugInfo');
+            if (message) {
+                const parts = debugInfo.innerHTML.split('<br>');
+                const key = message.split(':')[0];
+                
+                // Update the specific line
+                for (let i = 0; i < parts.length; i++) {
+                    if (parts[i].startsWith(key)) {
+                        parts[i] = message;
+                        break;
+                    }
+                }
+                debugInfo.innerHTML = parts.join('<br>');
+            } else {
+                debugInfo.innerHTML = `Face API Status: ${faceApiLoaded ? 'Ready' : 'Loading...'}<br>
+                                     Detection Status: ${isStreaming ? 'Active' : 'Inactive'}<br>
+                                     Audio Context: ${audioContext ? 'Ready' : 'Not initialized'}`;
+            }
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    switchSection(this.dataset.section);
+                    
+                    // Update active nav state
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Face detection toggle
+            document.getElementById('faceDetectionToggle').addEventListener('change', function() {
+                faceDetectionEnabled = this.checked;
+                console.log('Face detection:', faceDetectionEnabled ? 'enabled' : 'disabled');
+                updateDebugInfo(`Detection Status: ${isStreaming ? 'Active' : 'Inactive'}`);
+            });
+
+            // Buzzer toggle
+            document.getElementById('buzzerToggle').addEventListener('change', function() {
+                buzzerEnabled = this.checked;
+                console.log('Buzzer alerts:', buzzerEnabled ? 'enabled' : 'disabled');
+            });
+
+            // Volume control
+            document.getElementById('volumeSlider').addEventListener('input', function() {
+                document.getElementById('volumeDisplay').textContent = this.value + '%';
+            });
+        }
+
+        // Switch between sections
+        function switchSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // Show selected section
+            const targetSection = document.getElementById(sectionName + '-section');
+            if (targetSection) {
+                targetSection.style.display = 'block';
+            }
+
+            // Update page title
+            const titles = {
+                'dashboard': 'Dashboard Overview',
+                'monitoring': 'Live Monitoring',
+                'location': 'GPS Tracking',
+                'sensors': 'Sensor Status',
+                'alerts': 'Alert History',
+                'settings': 'System Settings'
+            };
+            document.getElementById('pageTitle').textContent = titles[sectionName] || 'Dashboard';
+        }
+
+        // Load Face API models
+        async function loadFaceAPI() {
+            try {
+                updateDebugInfo('Face API Status: Loading...');
+                console.log('Loading Face API models...');
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdnjs.cloudflare.com/ajax/libs/face-api.js/0.22.2/models');
+                await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdnjs.cloudflare.com/ajax/libs/face-api.js/0.22.2/models');
+                await faceapi.nets.faceRecognitionNet.loadFromUri('https://cdnjs.cloudflare.com/ajax/libs/face-api.js/0.22.2/models');
+                
+                faceApiLoaded = true;
+                console.log('Face API models loaded successfully');
+                document.getElementById('aiStatus').textContent = 'Ready';
+                updateDebugInfo('Face API Status: Ready');
+            } catch (error) {
+                console.error('Error loading Face API models:', error);
+                document.getElementById('aiStatus').textContent = 'Error';
+                document.getElementById('aiStatus').className = 'status-value offline';
+                updateDebugInfo('Face API Status: Error');
+            }
+        }
+
+        // Toggle camera stream
+        async function toggleCamera() {
+            const videoElement = document.getElementById('videoElement');
+            const placeholder = document.getElementById('videoPlaceholder');
+            const loader = document.getElementById('videoLoader');
+            const streamBtn = document.getElementById('streamBtn');
+            const cameraIcon = document.getElementById('cameraIcon');
+            const streamText = document.getElementById('streamText');
+
+            if (!isStreaming) {
+                try {
+                    loader.style.display = 'block';
+                    streamBtn.disabled = true;
+
+                    videoStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { width: 640, height: 480 },
+                        audio: false 
+                    });
+                    
+                    videoElement.srcObject = videoStream;
+                    videoElement.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    
+                    // Show video overlay and recording indicator
+                    document.getElementById('videoOverlay').style.display = 'block';
+                    document.getElementById('recordingIndicator').style.display = 'flex';
+                    
+                    isStreaming = true;
+                    cameraIcon.className = 'fas fa-stop';
+                    streamText.textContent = 'Stop Stream';
+                    
+                    // Start face detection
+                    if (faceApiLoaded) {
+                        startFaceDetection();
+                    }
+                    
+                    addAlert('Camera stream started', 'success');
+                    updateDebugInfo('Detection Status: Active');
+
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    addAlert('Camera access denied or unavailable', 'warning');
+                } finally {
+                    loader.style.display = 'none';
+                    streamBtn.disabled = false;
+                }
+            } else {
+                stopCamera();
+            }
+        }
+
+        // Stop camera stream
+        function stopCamera() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            
+            const videoElement = document.getElementById('videoElement');
+            const placeholder = document.getElementById('videoPlaceholder');
+            const cameraIcon = document.getElementById('cameraIcon');
+            const streamText = document.getElementById('streamText');
+            
+            videoElement.style.display = 'none';
+            placeholder.style.display = 'flex';
+            document.getElementById('videoOverlay').style.display = 'none';
+            document.getElementById('recordingIndicator').style.display = 'none';
+            document.getElementById('faceDetectionIndicator').style.display = 'none';
+            
+            isStreaming = false;
+            cameraIcon.className = 'fas fa-play';
+            streamText.textContent = 'Start Stream';
+            
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+                detectionInterval = null;
+            }
+            
+            addAlert('Camera stream stopped', 'info');
+            updateDebugInfo('Detection Status: Inactive');
+        }
+
+        // Start face detection
+        function startFaceDetection() {
+            const videoElement = document.getElementById('videoElement');
+            const canvas = document.getElementById('faceCanvas');
+            const indicator = document.getElementById('faceDetectionIndicator');
+            
+            canvas.style.display = 'block';
+            
+            detectionInterval = setInterval(async () => {
+                if (!faceDetectionEnabled || !isStreaming || !faceApiLoaded) return;
+                
+                try {
+                    const detections = await faceapi.detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions());
+                    
+                    // Clear previous drawings
+                    const context = canvas.getContext('2d');
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    if (detections.length > 0) {
+                        // Draw face detection boxes
+                        const resizedDetections = faceapi.resizeResults(detections, {
+                            width: videoElement.videoWidth,
+                            height: videoElement.videoHeight
+                        });
+                        
+                        faceapi.draw.drawDetections(canvas, resizedDetections);
+                        
+                        // Show face detection indicator
+                        indicator.style.display = 'flex';
+                        indicator.classList.add('active');
+                        
+                        // Trigger buzzer alert if enabled
+                        if (buzzerEnabled) {
+                            playBuzzerSound();
+                        }
+                        
+                        addAlert(`${detections.length} face(s) detected - Security breach!`, 'alert');
+                        
+                        // Update system status
+                        updateSystemStatus(true);
+                        
+                    } else {
+                        indicator.style.display = 'none';
+                        indicator.classList.remove('active');
+                    }
+                } catch (error) {
+                    console.error('Face detection error:', error);
+                }
+            }, 500); // Check every 500ms
+        }
+
+        // Capture snapshot
+        function captureSnapshot() {
+            if (!isStreaming) {
+                addAlert('Start camera stream first to capture snapshot', 'warning');
+                return;
+            }
+            
+            const videoElement = document.getElementById('videoElement');
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            
+            context.drawImage(videoElement, 0, 0);
+            
+            // Create download link
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `security-snapshot-${new Date().toISOString()}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+            
+            addAlert('Security snapshot captured', 'success');
+        }
+
+        // Test buzzer sound
+        function testBuzzerSound() {
+            playBuzzerSound();
+            addAlert('Buzzer test completed', 'info');
+        }
+
+        // Play buzzer sound (using Web Audio API)
+        function playBuzzerSound() {
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    updateDebugInfo('Audio Context: Ready');
+                }
+                
+                const volume = document.getElementById('volumeSlider').value / 100;
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800; // 800Hz buzzer tone
+                gainNode.gain.value = volume * 0.1; // Adjust volume
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.5); // 500ms duration
+                
+                // After the beep sound, announce face detection
+                setTimeout(speakDetectionAlert, 600); // 600ms delay to speak after beep
+                
+            } catch (error) {
+                console.error('Audio error:', error);
+                updateDebugInfo('Audio Context: Error');
+            }
+        }
+
+        // Speak face detection alert
+        function speakDetectionAlert() {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance("Face was detected");
+                utterance.volume = document.getElementById('volumeSlider').value / 100;
+                speechSynthesis.speak(utterance);
+            } else {
+                console.log("Text-to-speech not supported in this browser");
+            }
+        }
+
+        // Add alert to the system
+        function addAlert(message, type = 'info') {
+            const alertsList = document.getElementById('alertsList');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert-item ${type}`;
+            
+            const icons = {
+                'success': 'fas fa-check-circle',
+                'warning': 'fas fa-exclamation-triangle',
+                'info': 'fas fa-info-circle',
+                'alert': 'fas fa-exclamation-triangle'
+            };
+            
+            alertDiv.innerHTML = `
+                <i class="${icons[type] || icons.info}"></i>
+                <div>
+                    <p>${message}</p>
+                    <span class="alert-time">Just now</span>
+                </div>
+            `;
+            
+            alertsList.insertBefore(alertDiv, alertsList.firstChild);
+            
+            // Keep only last 10 alerts
+            while (alertsList.children.length > 10) {
+                alertsList.removeChild(alertsList.lastChild);
+            }
+        }
+
+        // Update system status
+        function updateSystemStatus(breach = false) {
+            const systemStatus = document.getElementById('systemStatus');
+            const securityStatus = document.getElementById('securityStatus');
+            
+            if (breach) {
+                systemStatus.className = 'status-badge alert';
+                systemStatus.innerHTML = '<div class="pulse"></div>SECURITY BREACH';
+                securityStatus.textContent = 'ALERT';
+                securityStatus.style.color = '#ff5252';
+            } else {
+                systemStatus.className = 'status-badge';
+                systemStatus.innerHTML = '<div class="pulse"></div>System Secure';
+                securityStatus.textContent = 'PROTECTED';
+                securityStatus.style.color = '#ffffff';
+            }
+        }
+
+        // Simulate real-time data updates
+        function simulateRealTimeData() {
+            setInterval(() => {
+                // Update battery level (simulate slight fluctuations)
+                const currentBattery = parseInt(document.getElementById('batteryLevel').textContent);
+                const newBattery = Math.max(85, Math.min(100, currentBattery + (Math.random() - 0.5) * 2));
+                document.getElementById('batteryLevel').textContent = Math.round(newBattery) + '%';
+                
+                // Update last update time
+                document.getElementById('lastUpdate').textContent = 'Just updated';
+                
+                // Randomly simulate sensor status changes
+                if (Math.random() < 0.1) { // 10% chance
+                    const sensors = ['vibrationSensor', 'pirSensor', 'doorSensor', 'windowSensor'];
+                    const randomSensor = sensors[Math.floor(Math.random() * sensors.length)];
+                    const sensorElement = document.getElementById(randomSensor);
+                    
+                    if (sensorElement.classList.contains('status-active')) {
+                        sensorElement.classList.remove('status-active');
+                        sensorElement.classList.add('status-inactive');
+                        addAlert(`${randomSensor.replace('Sensor', '')} sensor offline`, 'warning');
+                    } else {
+                        sensorElement.classList.remove('status-inactive');
+                        sensorElement.classList.add('status-active');
+                        addAlert(`${randomSensor.replace('Sensor', '')} sensor back online`, 'success');
+                    }
+                }
+            }, 30000); // Update every 30 seconds
+        }
+
+        // Simulate backend connectivity check
+        setInterval(() => {
+            const statuses = ['apiStatus', 'dbStatus', 'wsStatus'];
+            statuses.forEach(statusId => {
+                const element = document.getElementById(statusId);
+                if (Math.random() < 0.95) { // 95% uptime
+                    element.textContent = statusId === 'apiStatus' ? 'Online' : 
+                                         statusId === 'dbStatus' ? 'Connected' : 'Active';
+                    element.className = 'status-value online';
+                } else {
+                    element.textContent = 'Offline';
+                    element.className = 'status-value offline';
+                }
+            });
+        }, 60000); // Check every minute
+    </script>
+</body>
+</html>
